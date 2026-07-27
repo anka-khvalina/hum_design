@@ -109,10 +109,11 @@ docker run --rm -p 8000:8000 \
 3. Выберите репозиторий `hum_design`.
 4. Render прочитает `render.yaml` и создаст один Web Service (`runtime: docker`).
 5. Заполните sync:false переменные (см. список ниже).
-6. После первого деплоя скопируйте URL сервиса (например `https://human-design-bot.onrender.com`) и задайте:
-   - `PUBLIC_BASE_URL=https://human-design-bot.onrender.com`
-   - `MINI_APP_URL=https://human-design-bot.onrender.com`
-7. Redeploy. При `APP_ENV=production` и `TELEGRAM_WEBHOOK_AUTO_SETUP=true` сервис сам вызовет `setWebhook`.
+6. После первого деплоя задайте URL сервиса (текущий прод: `https://hum-design.onrender.com`):
+   - `PUBLIC_BASE_URL=https://hum-design.onrender.com`
+   - `MINI_APP_URL=https://hum-design.onrender.com`
+7. Убедитесь, что **Dockerfile Path = `./Dockerfile`** (корневой multi-stage), а не `human-design-service/Dockerfile` — иначе Mini App на `/` не появится.
+8. Redeploy. При `APP_ENV=production` и `TELEGRAM_WEBHOOK_AUTO_SETUP=true` сервис сам вызовет `setWebhook`.
 
 ### Вариант B — вручную один Web Service
 
