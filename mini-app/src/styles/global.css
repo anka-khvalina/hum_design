@@ -545,6 +545,17 @@ h2 {
   line-height: 1.62;
 }
 
+.summary-text {
+  display: grid;
+  gap: 1rem;
+  margin-top: 4px;
+}
+
+.summary-text p {
+  margin: 0;
+  white-space: pre-line;
+}
+
 .params-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

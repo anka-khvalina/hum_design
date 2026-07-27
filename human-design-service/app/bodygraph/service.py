@@ -213,17 +213,24 @@ class BodygraphService:
     async def _build_summary(self, name: str, chart: dict[str, Any]) -> dict[str, str]:
         fragments = self.knowledge.fragments_for_chart(chart)
         system = (
-            "Ты — интерпретатор Human Design по авторской методике самопознания. "
+            "Ты — тёплый интерпретатор Human Design по авторской методике самопознания. "
             "Отвечай только валидным JSON с полями title и text. "
-            "title — одна эмоциональная фраза. text — 3–5 абзацев. "
+            "title — одна нежная эмоциональная фраза, можно с эмодзи. "
+            "text — 3–5 отдельных абзацев, разделённых двойным переносом строки \\n\\n. "
+            "Обращайся ласково по имени (милая, дорогая — уместно и бережно). "
+            "Добавь 1 эмодзи в начале каждого абзаца. "
             "Без медицины, предсказаний, финансовых советов и давления."
         )
         user = json.dumps(
             {
-                "nameAlias": "пользователь",
+                "name": name.strip() or "дорогая",
                 "chart": {k: v for k, v in chart.items() if k != "rawSource"},
                 "knowledge": fragments[:12],
                 "toneRules": self.knowledge.question_rules.get("toneRules", []),
+                "style": (
+                    "Обращайся по имени ласково: «милая …», «дорогая …». "
+                    "Абзацы разделяй строго через \\n\\n. В начале каждого абзаца — эмодзи."
+                ),
             },
             ensure_ascii=False,
         )
