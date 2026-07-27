@@ -33,7 +33,7 @@ class TelegramClient:
         if not self.configured:
             logger.warning('"provider=telegram operation=%s status=skipped"', method)
             return {"ok": True, "skipped": True}
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             if files:
                 response = await client.post(f"{self.base}/{method}", data=data, files=files)
             else:
@@ -75,25 +75,7 @@ class TelegramClient:
         try:
             return await self._post("sendMessage", body)
         except RuntimeError:
-            # 1) Retry with plain URL button (more compatible than web_app).
-            if reply_markup:
-                url = self.settings.resolved_mini_app_url()
-                fallback_keyboard = {
-                    "inline_keyboard": [[{"text": "Открыть полный разбор", "url": url}]]
-                }
-                body_url = {
-                    "chat_id": chat_id,
-                    "text": text[:4096],
-                    "disable_web_page_preview": True,
-                    "reply_markup": fallback_keyboard,
-                }
-                if parse_mode:
-                    body_url["parse_mode"] = parse_mode
-                try:
-                    return await self._post("sendMessage", body_url)
-                except RuntimeError:
-                    pass
-            # 2) Retry plain text without markup.
+            # Fast fallback: plain text only (no second keyboard attempt).
             plain = {
                 "chat_id": chat_id,
                 "text": html.unescape(text)[:4096],
@@ -136,12 +118,13 @@ class TelegramClient:
         }
 
     def open_app_keyboard(self) -> dict[str, Any]:
+        # Use url (not web_app) to avoid Telegram rejecting the whole sendMessage.
         return {
             "inline_keyboard": [
                 [
                     {
                         "text": "Открыть полный разбор",
-                        "web_app": {"url": self.settings.resolved_mini_app_url()},
+                        "url": self.settings.resolved_mini_app_url(),
                     }
                 ]
             ]

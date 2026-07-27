@@ -73,6 +73,11 @@ export function ResultScreen({
     try {
       await onSendToTelegram();
       setSendState("sent");
+      // Close Mini App so Telegram stops any WebView loading indicator
+      // and the user immediately sees the delivered messages in chat.
+      window.setTimeout(() => {
+        window.Telegram?.WebApp?.close?.();
+      }, 600);
     } catch (error) {
       setSendState("idle");
       const message =
