@@ -118,7 +118,6 @@ class TelegramClient:
         }
 
     def open_app_keyboard(self) -> dict[str, Any]:
-        # Use url (not web_app) to avoid Telegram rejecting the whole sendMessage.
         return {
             "inline_keyboard": [
                 [
@@ -129,6 +128,39 @@ class TelegramClient:
                 ]
             ]
         }
+
+    def questions_keyboard(self) -> dict[str, Any]:
+        """Category buttons for post-bodygraph Q&A in Telegram chat."""
+        rows = [
+            [("✨ Мои главные таланты", "q:talents")],
+            [("🧭 Мое направление", "q:direction")],
+            [("💼 Работа и реализация", "q:work")],
+            [("💰 Деньги и ресурсы", "q:money")],
+            [("💬 Мой характер и общение", "q:character")],
+            [("❤️ Я в отношениях", "q:relationships")],
+            [("⚡ Моя энергия и восстановление", "q:energy")],
+            [("✍️ Задать свой вопрос", "q:custom")],
+            [("Открыть полный разбор", "url")],
+        ]
+        keyboard: list[list[dict[str, str]]] = []
+        for row in rows:
+            buttons: list[dict[str, str]] = []
+            for text, action in row:
+                if action == "url":
+                    buttons.append({"text": text, "url": self.settings.resolved_mini_app_url()})
+                else:
+                    buttons.append({"text": text, "callback_data": action})
+            keyboard.append(buttons)
+        return {"inline_keyboard": keyboard}
+
+    async def answer_callback_query(
+        self, callback_query_id: str, text: str | None = None, show_alert: bool = False
+    ) -> dict[str, Any]:
+        body: dict[str, Any] = {"callback_query_id": callback_query_id}
+        if text:
+            body["text"] = text[:200]
+            body["show_alert"] = show_alert
+        return await self._post("answerCallbackQuery", body)
 
     def webhook_url(self) -> str:
         base = self.settings.public_base_url.rstrip("/")

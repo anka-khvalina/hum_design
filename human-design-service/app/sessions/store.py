@@ -76,6 +76,18 @@ class SessionStore:
             return None
         return session
 
+    def get_latest_for_user(self, telegram_user_id: int) -> DemoSession | None:
+        self.cleanup()
+        with self._lock:
+            owned = [
+                s
+                for s in self._sessions.values()
+                if s.telegram_user_id == telegram_user_id and not s.is_expired()
+            ]
+        if not owned:
+            return None
+        return max(owned, key=lambda s: s.created_at)
+
     def save_answer(self, session_id: str, key: str, answer: dict[str, Any]) -> None:
         with self._lock:
             session = self._sessions.get(session_id)

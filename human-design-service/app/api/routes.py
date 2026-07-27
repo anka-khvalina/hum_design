@@ -235,7 +235,7 @@ async def send_to_telegram(
         await client.send_message(
             user["telegramUserId"],
             text[:3900],
-            client.open_app_keyboard(),
+            client.questions_keyboard(),
         )
     except Exception as exc:
         logger.error('"operation=send_to_telegram error=%s"', type(exc).__name__)
