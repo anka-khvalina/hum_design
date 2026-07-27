@@ -1,0 +1,34 @@
+{
+  "6-59": {
+    "title": "Канал близости и связей",
+    "theme": "Эмоциональная избирательность в союзах",
+    "source": "author-method",
+    "usageStatus": "draft",
+    "authorApproved": false,
+    "version": "0.1.0"
+  },
+  "10-34": {
+    "title": "Канал исследования",
+    "theme": "Сила самолюбия в действии через отклик",
+    "source": "author-method",
+    "usageStatus": "draft",
+    "authorApproved": false,
+    "version": "0.1.0"
+  },
+  "20-34": {
+    "title": "Канал харизмы",
+    "theme": "Сила проявляется в моменте здесь и сейчас",
+    "source": "author-method",
+    "usageStatus": "draft",
+    "authorApproved": false,
+    "version": "0.1.0"
+  },
+  "25-51": {
+    "title": "Канал инициации",
+    "theme": "Импульс пробуждения и соревновательный дух",
+    "source": "author-method",
+    "usageStatus": "draft",
+    "authorApproved": false,
+    "version": "0.1.0"
+  }
+}

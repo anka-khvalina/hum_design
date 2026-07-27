@@ -110,7 +110,7 @@ export class ApiClient {
       `/api/v1/demo-sessions/${encodeURIComponent(sessionId)}/questions`,
       {
         method: "POST",
-        body: JSON.stringify({ questionType, question })
+        body: JSON.stringify({ category: questionType, question })
       }
     );
 
@@ -181,14 +181,15 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 function normalizeLocation(item: Record<string, unknown>): LocationSuggestion | null {
   const id = String(item.id ?? item.placeId ?? item.place_id ?? item.geonameId ?? "");
+  const name = optionalString(item.name) || "";
+  const region = optionalString(item.region);
+  const country = optionalString(item.country) || "";
   const label = String(
     item.label ??
       item.displayName ??
       item.display_name ??
-      item.fullName ??
-      item.full_name ??
-      item.name ??
-      ""
+      [name, region, country].filter(Boolean).join(", ") ??
+      name
   );
 
   if (!id || !label) {
@@ -198,9 +199,9 @@ function normalizeLocation(item: Record<string, unknown>): LocationSuggestion | 
   return {
     id,
     label,
-    name: optionalString(item.name),
-    country: optionalString(item.country),
-    region: optionalString(item.region),
+    name: name || label,
+    country,
+    region,
     timezone: optionalString(item.timezone ?? item.timeZone ?? item.time_zone),
     latitude: optionalNumber(item.latitude ?? item.lat),
     longitude: optionalNumber(item.longitude ?? item.lon ?? item.lng)
@@ -213,31 +214,58 @@ function normalizeBodygraph(data: Record<string, unknown>): BodygraphResponse {
     throw new ApiError("Bodygraph response does not include sessionId", 500);
   }
 
-  const params = (data.params ?? data.mainParams ?? data.main_params ?? data) as Record<
+  const chart = (data.bodygraph ?? data.params ?? data.mainParams ?? data) as Record<
     string,
     unknown
   >;
+  const summaryObj = data.summary;
+  const summaryText =
+    typeof summaryObj === "string"
+      ? summaryObj
+      : summaryObj && typeof summaryObj === "object"
+        ? String((summaryObj as Record<string, unknown>).text ?? "")
+        : String(data.shortSummary ?? data.short_summary ?? "");
+  const summaryTitle =
+    summaryObj && typeof summaryObj === "object"
+      ? optionalString((summaryObj as Record<string, unknown>).title)
+      : optionalString(data.title ?? data.emotionalTitle);
+
+  const birth = (data.birthData ?? data.birth_data ?? {}) as Record<string, unknown>;
+  const location = (birth.location ?? {}) as Record<string, unknown>;
 
   return {
     sessionId,
-    name: String(data.name ?? params.name ?? ""),
-    timezone: String(data.timezone ?? data.timeZone ?? data.time_zone ?? ""),
-    title: optionalString(data.title ?? data.emotionalTitle ?? data.emotional_title),
-    summary: String(data.summary ?? data.shortSummary ?? data.short_summary ?? ""),
-    type: String(params.type ?? params.hdType ?? params.hd_type ?? data.type ?? ""),
-    strategy: String(params.strategy ?? data.strategy ?? ""),
-    authority: String(params.authority ?? data.authority ?? ""),
-    profile: String(params.profile ?? data.profile ?? ""),
-    definition: String(params.definition ?? data.definition ?? ""),
+    name: String(birth.name ?? data.name ?? ""),
+    timezone: String(location.timezone ?? data.timezone ?? ""),
+    title: summaryTitle,
+    summary: summaryText,
+    type: String(chart.type ?? data.type ?? ""),
+    strategy: String(chart.strategy ?? data.strategy ?? ""),
+    authority: String(chart.authority ?? data.authority ?? ""),
+    profile: String(chart.profile ?? data.profile ?? ""),
+    definition: String(chart.definition ?? data.definition ?? ""),
     lifeWork: String(
-      params.lifeWork ??
-        params.life_work ??
-        params.incarnationCross ??
-        params.incarnation_cross ??
+      chart.incarnationCross ??
+        chart.incarnation_cross ??
+        chart.lifeWork ??
         data.lifeWork ??
-        data.life_work ??
         ""
-    )
+    ),
+    demoMode: optionalString(data.demoMode ?? data.demo_mode),
+    details: {
+      signature: optionalString(chart.signature),
+      notSelfTheme: optionalString(chart.notSelfTheme ?? chart.not_self_theme),
+      incarnationCross: optionalString(chart.incarnationCross ?? chart.incarnation_cross),
+      centers: Array.isArray(chart.centers) ? chart.centers.map(String) : undefined,
+      channels: Array.isArray(chart.channels) ? chart.channels.map(String) : undefined,
+      gates: Array.isArray(chart.gates) ? chart.gates.map(String) : undefined,
+      cognition: optionalString(chart.cognition),
+      determination: optionalString(chart.determination),
+      variables: optionalString(chart.variables),
+      motivation: optionalString(chart.motivation),
+      perspective: optionalString(chart.perspective),
+      environment: optionalString(chart.environment)
+    }
   };
 }
 
@@ -246,14 +274,16 @@ function normalizeAnswer(
   fallbackType: QuestionKey,
   fallbackQuestion?: string
 ): QuestionAnswer {
+  const basedOnRaw = data.basedOn ?? data.based_on ?? data.usedChartElements;
   return {
-    questionType: (data.questionType ?? data.question_type ?? fallbackType) as QuestionKey,
+    questionType: (data.questionType ?? data.question_type ?? data.category ?? fallbackType) as QuestionKey,
     question: optionalString(data.question ?? fallbackQuestion),
+    title: optionalString(data.title),
     shortAnswer: String(data.shortAnswer ?? data.short_answer ?? data.answer ?? ""),
     manifestations: normalizeStringList(data.manifestations),
     strength: String(data.strength ?? ""),
     attentionPoint: String(data.attentionPoint ?? data.attention_point ?? ""),
-    basedOn: String(data.basedOn ?? data.based_on ?? ""),
+    basedOn: normalizeStringList(basedOnRaw),
     reflectionQuestion: String(data.reflectionQuestion ?? data.reflection_question ?? "")
   };
 }

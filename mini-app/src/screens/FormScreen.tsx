@@ -228,7 +228,13 @@ function validate(data: BirthFormData): ValidationErrors {
     errors.birthTime = ru.errors.birthTime;
   }
 
-  if (!data.location) {
+  if (
+    !data.location ||
+    !data.location.timezone ||
+    data.location.latitude == null ||
+    data.location.longitude == null ||
+    !data.location.country
+  ) {
     errors.location =
       data.locationQuery.trim().length >= 2 ? ru.form.chooseFromList : ru.errors.location;
   }

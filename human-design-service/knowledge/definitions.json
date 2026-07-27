@@ -1,0 +1,42 @@
+{
+  "Single Definition": {
+    "ru": "Единая определенность",
+    "explanation": "Все определённые центры связаны между собой — энергия течёт целостно.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Split Definition": {
+    "ru": "Раздвоенная определенность",
+    "explanation": "Две отдельные области определённости — мосты часто приходят через других людей.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Triple Split Definition": {
+    "ru": "Тройная определенность",
+    "explanation": "Три отдельные области — разнообразие связей помогает собрать целостность.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Quadruple Split Definition": {
+    "ru": "Четверная определенность",
+    "explanation": "Четыре отдельные области определённости — пространство и люди особенно важны.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "No Definition": {
+    "ru": "Без определенности",
+    "explanation": "Нет постоянных определённых центров — отражение среды и лунного ритма.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  }
+}

@@ -102,11 +102,29 @@ export function App() {
     setScreen("calculating");
 
     try {
+      const loc = formData.location;
+      if (
+        !loc.name ||
+        !loc.country ||
+        !loc.timezone ||
+        loc.latitude == null ||
+        loc.longitude == null
+      ) {
+        throw new ApiError("Выберите место рождения из списка", 422);
+      }
+
       const createdResult = await api.createBodygraph({
         name: formData.name,
         birthDate: formData.birthDate,
         birthTime: formData.birthTime,
-        placeId: formData.location.id
+        location: {
+          name: loc.name,
+          region: loc.region,
+          country: loc.country,
+          timezone: loc.timezone,
+          latitude: loc.latitude,
+          longitude: loc.longitude
+        }
       });
       const nextImageUrl = await api.fetchBodygraphImage(createdResult.sessionId);
 
@@ -116,6 +134,13 @@ export function App() {
 
       imageUrlRef.current = nextImageUrl;
       setResult(createdResult);
+      if (createdResult.demoMode) {
+        setDemoMode(
+          createdResult.demoMode === "fixture" || createdResult.demoMode === "DEMO FALLBACK"
+            ? "DEMO FALLBACK"
+            : "LIVE"
+        );
+      }
       setImageUrl(nextImageUrl);
       setScreen("result");
     } catch (error) {

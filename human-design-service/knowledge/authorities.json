@@ -1,0 +1,58 @@
+{
+  "Emotional": {
+    "ru": "Эмоциональный",
+    "explanation": "Способ принимать решения через эмоциональную волну — ясность приходит со временем, а не в момент пика.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Sacral": {
+    "ru": "Сакральный",
+    "explanation": "Способ принимать решения через телесный отклик — внутреннее «да» или «нет».",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Splenic": {
+    "ru": "Селезёночный",
+    "explanation": "Мгновенная интуиция здесь и сейчас — тихий импульс безопасности или настороженности.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Ego": {
+    "ru": "Эго",
+    "explanation": "Решения через силу воли и честное желание сердца — «хочу» или «не хочу».",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Self-Projected": {
+    "ru": "Самонаправленный",
+    "explanation": "Ясность приходит через проговаривание — когда ты слышишь себя в разговоре.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Environmental": {
+    "ru": "Окружения",
+    "explanation": "Решения зависят от правильной среды — ясность появляется в подходящем пространстве.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  },
+  "Lunar": {
+    "ru": "Лунный",
+    "explanation": "Для важных решений нужен полный лунный цикл наблюдения.",
+    "source": "author-method",
+    "usageStatus": "approved",
+    "authorApproved": true,
+    "version": "0.1.0"
+  }
+}

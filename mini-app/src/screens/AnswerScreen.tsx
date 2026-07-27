@@ -27,7 +27,10 @@ export function AnswerScreen({ answer, onBack }: AnswerScreenProps) {
         <div className="answer-grid">
           <InfoBlock title={ru.answer.strength} text={answer.strength} />
           <InfoBlock title={ru.answer.attentionPoint} text={answer.attentionPoint} />
-          <InfoBlock title={ru.answer.basedOn} text={answer.basedOn} />
+          <InfoBlock
+            title={ru.answer.basedOn}
+            text={answer.basedOn.filter(Boolean).join("\n")}
+          />
           <InfoBlock title={ru.answer.reflectionQuestion} text={answer.reflectionQuestion} />
         </div>
       </div>
@@ -49,7 +52,19 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
   return (
     <section className="info-block">
       <h2>{title}</h2>
-      <p>{text}</p>
+      {text.includes("\n") ? (
+        <ul className="manifestation-list">
+          {text
+            .split("\n")
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+        </ul>
+      ) : (
+        <p>{text}</p>
+      )}
     </section>
   );
 }

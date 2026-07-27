@@ -60,7 +60,14 @@ export interface BodygraphRequest {
   name: string;
   birthDate: string;
   birthTime: string;
-  placeId: string;
+  location: {
+    name: string;
+    region?: string | null;
+    country: string;
+    timezone: string;
+    latitude: number;
+    longitude: number;
+  };
 }
 
 export interface BodygraphResponse {
@@ -75,16 +82,19 @@ export interface BodygraphResponse {
   profile: string;
   definition: string;
   lifeWork: string;
+  demoMode?: DemoMode;
+  details?: Record<string, string | string[] | null | undefined>;
 }
 
 export interface QuestionAnswer {
   questionType: QuestionKey;
   question?: string;
+  title?: string;
   shortAnswer: string;
   manifestations: string[];
   strength: string;
   attentionPoint: string;
-  basedOn: string;
+  basedOn: string[];
   reflectionQuestion: string;
 }
 
