@@ -45,7 +45,13 @@ export function App() {
     setAppError(undefined);
 
     try {
-      const telegramApp = window.Telegram?.WebApp;
+      // Telegram injects WebApp after telegram-web-app.js; wait briefly if needed.
+      let telegramApp = window.Telegram?.WebApp;
+      if (!telegramApp?.initData) {
+        await new Promise((resolve) => window.setTimeout(resolve, 150));
+        telegramApp = window.Telegram?.WebApp;
+      }
+
       telegramApp?.ready();
       telegramApp?.expand();
 
