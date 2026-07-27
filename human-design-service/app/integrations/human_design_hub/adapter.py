@@ -161,22 +161,23 @@ class HumanDesignHubAdapter:
         )
 
     async def calculate_bodygraph(self, datetime_iso: str) -> dict[str, Any]:
-        # Prefer full bodygraph; fall back to simple on Free plan (403)
+        # Free plan supports simple-bodygraph; full /v2/bodygraph needs Standard+.
+        # Prefer simple first to avoid a guaranteed 403 (and rate-limit burn) on Free.
         try:
             return await self._request(
                 "POST",
-                "/v2/bodygraph",
-                operation="bodygraph",
-                json_body={"datetime": datetime_iso, "verbose": True},
+                "/v2/simple-bodygraph",
+                operation="simple_bodygraph",
+                json_body={"datetime": datetime_iso},
             )
         except HumanDesignHubError as exc:
             if exc.status == 403:
-                logger.info('"provider=human_design_hub operation=bodygraph fallback=simple-bodygraph"')
+                logger.info('"provider=human_design_hub operation=simple_bodygraph denied; trying full bodygraph"')
                 return await self._request(
                     "POST",
-                    "/v2/simple-bodygraph",
-                    operation="simple_bodygraph",
-                    json_body={"datetime": datetime_iso},
+                    "/v2/bodygraph",
+                    operation="bodygraph",
+                    json_body={"datetime": datetime_iso, "verbose": True},
                 )
             raise
 
@@ -190,7 +191,15 @@ class HumanDesignHubAdapter:
                 expect_bytes=True,
             )
         except HumanDesignHubError as exc:
-            if exc.status in (403, 404):
-                logger.info('"provider=human_design_hub operation=bodygraph_image unavailable status=%s"', exc.status)
-                return None
-            raise
+            # Image endpoint is Standard+ / rate-limited — never fail the whole chart for this.
+            logger.info(
+                '"provider=human_design_hub operation=bodygraph_image unavailable status=%s"',
+                exc.status,
+            )
+            return None
+        except Exception as exc:
+            logger.info(
+                '"provider=human_design_hub operation=bodygraph_image error=%s"',
+                type(exc).__name__,
+            )
+            return None

@@ -167,9 +167,13 @@ class BodygraphService:
                 )
                 datetime_iso = tz.get("datetime")
                 if not datetime_iso:
-                    raise HumanDesignHubError("timezone_resolve", 500, "No datetime", "HDHUB_BAD_RESPONSE")
+                    raise HumanDesignHubError(
+                        "timezone_resolve", 500, "No datetime", "HDHUB_BAD_RESPONSE"
+                    )
                 chart_raw = await self.hub.calculate_bodygraph(datetime_iso)
-                image_png = await self.hub.generate_bodygraph_image(datetime_iso)
+                # Skip Hub image API on purpose: Free plan returns 403 and burns rate limit.
+                # Local PNG is generated below from the live chart.
+                image_png = None
             except HumanDesignHubError as exc:
                 logger.error(
                     '"operation=calculate provider=human_design_hub status=%s code=%s"',
@@ -180,6 +184,7 @@ class BodygraphService:
                     raise
                 mode_used = "fixture"
                 chart_raw = load_fixture_chart(self.settings.fixtures_dir, birth["name"])
+                image_png = None
 
         assert chart_raw is not None
         normalized = normalize_bodygraph(chart_raw)
@@ -187,6 +192,14 @@ class BodygraphService:
             image_png = generate_bodygraph_png(normalized, birth["name"])
 
         summary = await self._build_summary(birth["name"], normalized)
+        if mode_used == "fixture":
+            # Make demo fallback obvious in the summary title for presenters.
+            title = summary.get("title") or "Демо-карта"
+            summary = {
+                **summary,
+                "title": f"[DEMO FALLBACK] {title}",
+            }
+
         session = self.sessions.create(
             telegram_user_id=telegram_user_id,
             birth_data=birth,
