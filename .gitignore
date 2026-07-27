@@ -15,9 +15,11 @@ venv/
 
 # Node / frontend build artifacts
 node_modules/
-dist/
-human-design-service/app/static/
+mini-app/dist/
 .DS_Store
+
+# Keep human-design-service/app/static in git so Render uvicorn deploys
+# can serve Mini App even without the root multi-stage Docker build.
 
 # IDE
 .idea/

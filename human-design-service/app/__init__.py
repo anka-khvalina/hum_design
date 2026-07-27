@@ -6,7 +6,7 @@ import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,17 +22,23 @@ from app.telegram.webhook import router as telegram_router
 
 logger = logging.getLogger(__name__)
 
-_SPA_BLOCKED = (
-    "api",
-    "api/",
-    "webhooks",
-    "webhooks/",
-    "health",
-    "ready",
-    "docs",
-    "openapi.json",
-    "redoc",
-)
+# Paths that must never be handled by the Mini App SPA fallback.
+_API_PREFIXES = ("api/", "webhooks/", "health", "ready", "docs", "openapi.json", "redoc", "assets/")
+
+
+def resolve_static_dir(configured: Path) -> Path | None:
+    """Find Mini App build directory across local/Docker layouts."""
+    candidates = [
+        configured,
+        Path(__file__).resolve().parent / "static",
+        Path.cwd() / "app" / "static",
+        Path.cwd() / "static",
+    ]
+    for path in candidates:
+        index = path / "index.html"
+        if index.is_file():
+            return path.resolve()
+    return None
 
 
 @asynccontextmanager
@@ -42,14 +48,19 @@ async def lifespan(app: FastAPI):
     app.state.settings = settings
     app.state.sessions = SessionStore(ttl_seconds=settings.session_ttl_seconds)
     app.state.knowledge = KnowledgePackage.load(settings.knowledge_dir)
+    static_dir = resolve_static_dir(settings.static_dir)
+    app.state.static_dir = static_dir
     logger.info(
-        "service_started demo_mode=%s app_env=%s knowledge_gates=%s public_base_url=%s mini_app_url=%s",
+        "service_started demo_mode=%s app_env=%s knowledge_gates=%s public_base_url=%s mini_app_url=%s static_dir=%s",
         settings.demo_mode,
         settings.app_env,
         len(app.state.knowledge.gates),
         settings.public_base_url,
         settings.resolved_mini_app_url(),
+        str(static_dir) if static_dir else None,
     )
+    if settings.is_production and static_dir is None:
+        logger.error('"static_dir missing in production — GET / will 404"')
 
     if (
         settings.is_production
@@ -73,39 +84,41 @@ async def lifespan(app: FastAPI):
     logger.info("service_stopped")
 
 
-def _mount_static(app: FastAPI, static_dir: Path) -> None:
-    if not static_dir.exists():
-        logger.info('"static_dir missing path=%s — Mini App assets not mounted"', static_dir)
+def _mount_static(app: FastAPI, static_dir: Path | None) -> None:
+    if static_dir is None:
+        logger.info('"static_dir missing — Mini App assets not mounted"')
         return
 
     assets_dir = static_dir / "assets"
-    if assets_dir.exists():
+    if assets_dir.is_dir():
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
     index_file = static_dir / "index.html"
 
     @app.get("/")
     async def serve_index():
-        if not index_file.exists():
-            raise HTTPException(status_code=404, detail="Mini App build not found")
-        return FileResponse(index_file)
+        return FileResponse(index_file, media_type="text/html; charset=utf-8")
 
     @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
-        if full_path in _SPA_BLOCKED or full_path.startswith(("api/", "webhooks/")):
+    async def serve_spa(full_path: str, request: Request):
+        # Never steal API / health / webhook traffic.
+        if (
+            full_path in {"health", "ready", "docs", "openapi.json", "redoc"}
+            or full_path.startswith(_API_PREFIXES)
+        ):
             raise HTTPException(status_code=404, detail="Not found")
 
         candidate = (static_dir / full_path).resolve()
         try:
-            candidate.relative_to(static_dir.resolve())
+            candidate.relative_to(static_dir)
         except ValueError as exc:
             raise HTTPException(status_code=404, detail="Not found") from exc
 
-        if full_path and candidate.exists() and candidate.is_file():
+        if full_path and candidate.is_file():
             return FileResponse(candidate)
-        if not index_file.exists():
-            raise HTTPException(status_code=404, detail="Mini App build not found")
-        return FileResponse(index_file)
+
+        # Client-side Mini App routes → index.html
+        return FileResponse(index_file, media_type="text/html; charset=utf-8")
 
     logger.info('"static_mounted path=%s"', static_dir)
 
@@ -124,10 +137,11 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    # API / webhook / health first — then SPA fallback.
     app.include_router(health_router)
     app.include_router(telegram_router)
     app.include_router(api_router, prefix="/api/v1")
-    _mount_static(app, settings.static_dir)
+    _mount_static(app, resolve_static_dir(settings.static_dir))
     return app
 
 

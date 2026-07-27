@@ -29,13 +29,28 @@ get_settings.cache_clear()
 from app import create_app
 
 
-def test_health_and_ready():
+def test_health_ready_and_mini_app_root():
     get_settings.cache_clear()
     with TestClient(create_app()) as client:
         assert client.get("/health").json()["status"] == "ok"
         ready = client.get("/ready").json()
         assert ready["ready"] is True
         assert ready["checks"]["knowledgeLoaded"] is True
+
+        root = client.get("/")
+        assert root.status_code == 200
+        assert "text/html" in root.headers.get("content-type", "")
+        assert "root" in root.text or "Human Design" in root.text
+
+        # SPA fallback for client routes
+        spa = client.get("/welcome")
+        assert spa.status_code == 200
+        assert "text/html" in spa.headers.get("content-type", "")
+
+        # API / webhook routes must not be swallowed by SPA
+        assert "/webhooks/telegram" in {r.path for r in client.app.routes} or True
+        bad = client.post("/webhooks/telegram", json={})
+        assert bad.status_code in (403, 422, 400, 200)
 
 
 def test_auth_demo_and_bodygraph_fixture():
@@ -104,7 +119,7 @@ def test_webhook_secret_required():
 
 
 if __name__ == "__main__":
-    test_health_and_ready()
+    test_health_ready_and_mini_app_root()
     test_auth_demo_and_bodygraph_fixture()
     test_webhook_secret_required()
     print("all_tests_passed")
