@@ -207,31 +207,40 @@ async def send_to_telegram(
     if not session:
         raise HTTPException(status_code=410, detail="Временная сессия завершилась.")
 
+    if not settings.telegram_bot_token:
+        raise HTTPException(
+            status_code=503,
+            detail="Отправка в Telegram временно недоступна. Проверьте TELEGRAM_BOT_TOKEN.",
+        )
+
     chart = session.normalized_bodygraph
     name = session.birth_data.get("name", "")
+
+    from app.telegram.client import html_escape
+
     caption = (
-        f"<b>{name}</b>\n"
-        f"Тип: {chart.get('type') or '—'}\n"
-        f"Стратегия: {chart.get('strategy') or '—'}\n"
-        f"Авторитет: {chart.get('authority') or '—'}\n"
-        f"Профиль: {chart.get('profile') or '—'}"
+        f"<b>{html_escape(str(name))}</b>\n"
+        f"Тип: {html_escape(str(chart.get('type') or '—'))}\n"
+        f"Стратегия: {html_escape(str(chart.get('strategy') or '—'))}\n"
+        f"Авторитет: {html_escape(str(chart.get('authority') or '—'))}\n"
+        f"Профиль: {html_escape(str(chart.get('profile') or '—'))}"
     )
-    text = (
-        f"<b>{session.summary.get('title', '')}</b>\n\n"
-        f"{session.summary.get('text', '')}"
-    )
-    keyboard = {
-        "inline_keyboard": [
-            [
-                {
-                    "text": "Открыть полный разбор",
-                    "web_app": {"url": settings.resolved_mini_app_url()},
-                }
-            ]
-        ]
-    }
+    title = html_escape(str(session.summary.get("title") or ""))
+    body_text = html_escape(str(session.summary.get("text") or ""))
+    text = f"<b>{title}</b>\n\n{body_text}".strip()
 
     client = TelegramClient(settings)
-    await client.send_photo(user["telegramUserId"], session.image_png, caption)
-    await client.send_message(user["telegramUserId"], text[:3900], keyboard)
+    try:
+        await client.send_photo(user["telegramUserId"], session.image_png, caption)
+        await client.send_message(
+            user["telegramUserId"],
+            text[:3900],
+            client.open_app_keyboard(),
+        )
+    except Exception as exc:
+        logger.error('"operation=send_to_telegram error=%s"', type(exc).__name__)
+        raise HTTPException(
+            status_code=502,
+            detail="Не удалось отправить результат в Telegram. Откройте чат с ботом и попробуйте снова.",
+        ) from exc
     return {"success": True}

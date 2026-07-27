@@ -176,8 +176,14 @@ export function App() {
 
     try {
       await api.sendToTelegram(result.sessionId);
+      window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.("success");
     } catch (error) {
-      routeApiError(error);
+      // Keep the user on the result screen for send failures (except auth/session).
+      if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+        routeApiError(error);
+      } else if (error instanceof ApiError && (error.status === 404 || error.status === 410)) {
+        routeApiError(error);
+      }
       throw error;
     }
   }

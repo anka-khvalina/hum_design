@@ -69,12 +69,17 @@ export function ResultScreen({
 
   async function sendToTelegram() {
     setSendState("sending");
+    setQuestionError("");
     try {
       await onSendToTelegram();
       setSendState("sent");
-    } catch {
+    } catch (error) {
       setSendState("idle");
-      setQuestionError(ru.errors.generic);
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : ru.errors.generic;
+      setQuestionError(message);
     }
   }
 
@@ -188,6 +193,7 @@ export function ResultScreen({
       </div>
 
       <div className="bottom-cta">
+        {questionError ? <p className="field-error">{questionError}</p> : null}
         <button
           className="button button--primary"
           type="button"

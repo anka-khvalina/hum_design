@@ -15,6 +15,9 @@ export interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
   close?: () => void;
+  HapticFeedback?: {
+    notificationOccurred?: (type: "error" | "success" | "warning") => void;
+  };
   MainButton?: {
     text: string;
     show: () => void;

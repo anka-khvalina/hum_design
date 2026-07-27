@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import logging
 from typing import Any
 
@@ -32,40 +33,95 @@ class TelegramClient:
         if not self.configured:
             logger.warning('"provider=telegram operation=%s status=skipped"', method)
             return {"ok": True, "skipped": True}
-        async with httpx.AsyncClient(timeout=20.0) as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             if files:
                 response = await client.post(f"{self.base}/{method}", data=data, files=files)
             else:
                 response = await client.post(f"{self.base}/{method}", json=json_body)
-        if response.status_code >= 400:
+
+        try:
+            payload = response.json()
+        except Exception:
+            payload = {"ok": False, "description": response.text[:300]}
+
+        if response.status_code >= 400 or not payload.get("ok", False):
+            description = str(payload.get("description") or response.text[:200])
             logger.error(
-                '"provider=telegram operation=%s status=%s"', method, response.status_code
+                '"provider=telegram operation=%s status=%s description=%s"',
+                method,
+                response.status_code,
+                description.replace('"', "'"),
             )
-            raise RuntimeError(f"Telegram API error: {response.status_code}")
-        return response.json()
+            raise RuntimeError(f"Telegram API error: {description}")
+        return payload
 
     async def send_message(
-        self, chat_id: int, text: str, reply_markup: dict | None = None
+        self,
+        chat_id: int,
+        text: str,
+        reply_markup: dict | None = None,
+        *,
+        parse_mode: str | None = "HTML",
     ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "chat_id": chat_id,
-            "text": text,
-            "parse_mode": "HTML",
+            "text": text[:4096],
             "disable_web_page_preview": True,
         }
+        if parse_mode:
+            body["parse_mode"] = parse_mode
         if reply_markup:
             body["reply_markup"] = reply_markup
-        return await self._post("sendMessage", body)
+        try:
+            return await self._post("sendMessage", body)
+        except RuntimeError:
+            # 1) Retry with plain URL button (more compatible than web_app).
+            if reply_markup:
+                url = self.settings.resolved_mini_app_url()
+                fallback_keyboard = {
+                    "inline_keyboard": [[{"text": "Открыть полный разбор", "url": url}]]
+                }
+                body_url = {
+                    "chat_id": chat_id,
+                    "text": text[:4096],
+                    "disable_web_page_preview": True,
+                    "reply_markup": fallback_keyboard,
+                }
+                if parse_mode:
+                    body_url["parse_mode"] = parse_mode
+                try:
+                    return await self._post("sendMessage", body_url)
+                except RuntimeError:
+                    pass
+            # 2) Retry plain text without markup.
+            plain = {
+                "chat_id": chat_id,
+                "text": html.unescape(text)[:4096],
+                "disable_web_page_preview": True,
+            }
+            return await self._post("sendMessage", plain)
 
     async def send_photo(
-        self, chat_id: int, photo: bytes, caption: str | None = None
+        self,
+        chat_id: int,
+        photo: bytes,
+        caption: str | None = None,
+        *,
+        parse_mode: str | None = "HTML",
     ) -> dict[str, Any]:
-        data = {"chat_id": str(chat_id)}
+        data: dict[str, str] = {"chat_id": str(chat_id)}
         if caption:
             data["caption"] = caption[:1024]
-            data["parse_mode"] = "HTML"
+            if parse_mode:
+                data["parse_mode"] = parse_mode
         files = {"photo": ("bodygraph.png", photo, "image/png")}
-        return await self._post("sendPhoto", files=files, data=data)
+        try:
+            return await self._post("sendPhoto", files=files, data=data)
+        except RuntimeError:
+            if caption and parse_mode:
+                data_plain = {"chat_id": str(chat_id), "caption": html.unescape(caption)[:1024]}
+                return await self._post("sendPhoto", files=files, data=data_plain)
+            raise
 
     def mini_app_keyboard(self) -> dict[str, Any]:
         return {
@@ -73,6 +129,18 @@ class TelegramClient:
                 [
                     {
                         "text": "✨ Построить мой BodyGraph",
+                        "web_app": {"url": self.settings.resolved_mini_app_url()},
+                    }
+                ]
+            ]
+        }
+
+    def open_app_keyboard(self) -> dict[str, Any]:
+        return {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "Открыть полный разбор",
                         "web_app": {"url": self.settings.resolved_mini_app_url()},
                     }
                 ]
@@ -117,3 +185,7 @@ class TelegramClient:
         if response.status_code >= 400:
             raise RuntimeError(f"Telegram API error: {response.status_code}")
         return response.json()
+
+
+def html_escape(value: str) -> str:
+    return html.escape(value or "", quote=False)
