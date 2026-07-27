@@ -36,6 +36,15 @@ export function ResultScreen({
   const [questionError, setQuestionError] = useState("");
   const [sendState, setSendState] = useState<"idle" | "sending" | "sent">("idle");
 
+  const summaryParagraphs = useMemo(
+    () =>
+      result.summary
+        .split(/\n{2,}/)
+        .map((part) => part.trim())
+        .filter(Boolean),
+    [result.summary]
+  );
+
   const params = useMemo(
     () => [
       ["Тип", result.type],
@@ -106,7 +115,11 @@ export function ResultScreen({
             </div>
           ))}
         </div>
-        <p>{result.summary}</p>
+        <div className="summary-text">
+          {summaryParagraphs.map((paragraph, index) => (
+            <p key={index}>{paragraph}</p>
+          ))}
+        </div>
         {expandedDetails ? (
           <div className="details-card">
             {[

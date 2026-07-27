@@ -6,11 +6,11 @@ from app.knowledge.loader import KnowledgePackage
 
 
 SUMMARY_TITLES = {
-    "Generator": "Твоя сила раскрывается через отклик",
-    "Manifesting Generator": "Твоя сила в быстром отклике и верном темпе",
-    "Projector": "Твоя сила в признании и мудром направлении",
-    "Manifestor": "Твоя сила в инициации через информирование",
-    "Reflector": "Твоя сила в отражении пространства вокруг",
+    "Generator": "💛 Твоя сила раскрывается через тёплый отклик",
+    "Manifesting Generator": "✨ Твоя сила — в живом темпе и верном «да»",
+    "Projector": "🌙 Твоя сила — в мягком видении и мудром направлении",
+    "Manifestor": "🔥 Твоя сила — в смелом начале через информирование",
+    "Reflector": "🌊 Твоя сила — в чутком отражении пространства вокруг",
 }
 
 
@@ -23,26 +23,38 @@ def build_summary_fallback(name: str, chart: dict[str, Any], knowledge: Knowledg
     profile_info = knowledge.profiles.get(profile, {})
     definition = chart.get("definition") or ""
     def_info = knowledge.definitions.get(definition, {})
+    raw_name = name.strip()
+    dear = f"милая {raw_name}" if raw_name else "дорогая душа"
 
-    title = SUMMARY_TITLES.get(t, "Твоя карта — зеркало природных качеств")
+    title = SUMMARY_TITLES.get(t, "🌸 Твоя карта — нежное зеркало твоей природы")
 
     paragraphs = [
-        f"{name}, в твоей карте звучит тип «{type_info.get('ru', t)}». {type_info.get('theme', '')}",
-        f"Стратегия «{chart.get('strategy') or '—'}» и авторитет «{auth_info.get('ru', auth)}» "
-        f"подсказывают естественный способ принимать решения. {auth_info.get('explanation', '')}",
-        f"Профиль {profile_info.get('ru', profile)}: {profile_info.get('theme', '')} "
-        f"{profile_info.get('talent', '')}",
+        f"🌸 {dear}, как же прекрасно знакомиться с тобой через карту.\n"
+        f"В тебе звучит тип «{type_info.get('ru', t) or t}». "
+        f"{type_info.get('theme') or 'Это твой естественный способ быть в мире — без принуждения.'}",
+        f"🧭 Мягкий ориентир для тебя — стратегия «{chart.get('strategy') or '—'}» "
+        f"и авторитет «{auth_info.get('ru', auth) or auth}».\n"
+        f"{auth_info.get('explanation') or 'Через них ты можешь принимать решения бережнее к себе.'} "
+        f"Не нужно торопиться, дорогая — ясность приходит в твоём ритме.",
+        f"💫 Профиль {profile_info.get('ru', profile) or profile} открывает твою особую грань.\n"
+        f"{profile_info.get('theme') or ''} "
+        f"{profile_info.get('talent') or 'В тебе уже есть то, чем ты по-настоящему ценна.'}".strip(),
     ]
     if definition:
-        paragraphs.append(f"Определенность: {def_info.get('ru', definition)}. {def_info.get('explanation', '')}")
+        paragraphs.append(
+            f"🔗 Определенность: {def_info.get('ru', definition) or definition}.\n"
+            f"{def_info.get('explanation') or 'Это про то, как твоя энергия собирается в целое.'}"
+        )
     if chart.get("incarnationCross"):
         paragraphs.append(
-            f"Дело жизни в карте обозначено как «{chart['incarnationCross']}» — "
-            "это направление для наблюдения, а не жёсткий сценарий."
+            f"🌿 Дело жизни в карте обозначено как «{chart['incarnationCross']}».\n"
+            "Это не приказ и не жёсткий сценарий, а тёплое направление для наблюдения: "
+            "куда тебе бывает особенно откликаться."
         )
     paragraphs.append(
-        "Карта не диктует, кем тебе быть. Она помогает замечать, где ты в потоке, "
-        "а где пытаешься жить чужим ритмом."
+        f"🤍 {dear}, карта не говорит, кем тебе «должно» быть.\n"
+        "Она помогает замечать, где ты в своём потоке, а где пытаешься жить чужим ритмом. "
+        "Будь к себе добрее, родная — ты уже достаточна."
     )
 
     return {"title": title, "text": "\n\n".join(p.strip() for p in paragraphs if p.strip())}

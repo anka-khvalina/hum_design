@@ -226,8 +226,12 @@ async def send_to_telegram(
         f"Профиль: {html_escape(str(chart.get('profile') or '—'))}"
     )
     title = html_escape(str(session.summary.get("title") or ""))
-    body_text = html_escape(str(session.summary.get("text") or ""))
-    text = f"<b>{title}</b>\n\n{body_text}".strip()
+    body_paras = [
+        html_escape(p.strip())
+        for p in str(session.summary.get("text") or "").replace("\r\n", "\n").split("\n\n")
+        if p.strip()
+    ]
+    text = f"<b>{title}</b>\n\n" + "\n\n".join(body_paras)
 
     client = TelegramClient(settings)
     try:
