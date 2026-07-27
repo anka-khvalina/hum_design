@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: human-design-bot
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEMO_MODE
+        value: auto
+      - key: TELEGRAM_WEBHOOK_AUTO_SETUP
+        value: "true"
+      - key: PUBLIC_BASE_URL
+        sync: false
+      - key: MINI_APP_URL
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_SECRET
+        generateValue: true
+      - key: HD_HUB_API_KEY
+        sync: false
+      - key: HD_HUB_BASE_URL
+        value: https://api.humandesignhub.app
+      - key: LLM_API_KEY
+        sync: false
+      - key: LLM_BASE_URL
+        value: https://api.openai.com/v1
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: LLM_ENABLED
+        value: "true"
+      - key: CORS_ORIGINS
+        value: "*"

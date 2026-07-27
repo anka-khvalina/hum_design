@@ -222,7 +222,12 @@ async def send_to_telegram(
     )
     keyboard = {
         "inline_keyboard": [
-            [{"text": "Открыть полный разбор", "web_app": {"url": settings.mini_app_url}}]
+            [
+                {
+                    "text": "Открыть полный разбор",
+                    "web_app": {"url": settings.resolved_mini_app_url()},
+                }
+            ]
         ]
     }
 

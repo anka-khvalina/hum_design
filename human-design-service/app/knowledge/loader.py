@@ -36,7 +36,9 @@ class KnowledgePackage:
             question_rules=load_json("question-rules.json"),
         )
 
-    def fragments_for_chart(self, chart: dict[str, Any], focus: list[str] | None = None) -> list[dict[str, Any]]:
+    def fragments_for_chart(
+        self, chart: dict[str, Any], focus: list[str] | None = None
+    ) -> list[dict[str, Any]]:
         focus = focus or ["type", "authority", "profile", "gates", "channels"]
         fragments: list[dict[str, Any]] = []
 

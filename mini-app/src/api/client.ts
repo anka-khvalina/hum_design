@@ -7,7 +7,8 @@ import type {
   QuestionKey
 } from "../types";
 
-const DEFAULT_API_BASE_URL = "http://localhost:8000";
+// Same-origin in production (backend serves the Mini App). Localhost only in Vite dev.
+const DEFAULT_API_BASE_URL = import.meta.env.DEV ? "http://localhost:8000" : "";
 
 export class ApiError extends Error {
   readonly status: number;

@@ -1,3 +1,5 @@
+"""Telegram Bot API client and webhook helpers."""
+
 from __future__ import annotations
 
 import logging
@@ -20,7 +22,13 @@ class TelegramClient:
     def configured(self) -> bool:
         return bool(self.token)
 
-    async def _post(self, method: str, json_body: dict[str, Any] | None = None, files=None, data=None) -> dict[str, Any]:
+    async def _post(
+        self,
+        method: str,
+        json_body: dict[str, Any] | None = None,
+        files=None,
+        data=None,
+    ) -> dict[str, Any]:
         if not self.configured:
             logger.warning('"provider=telegram operation=%s status=skipped"', method)
             return {"ok": True, "skipped": True}
@@ -30,11 +38,15 @@ class TelegramClient:
             else:
                 response = await client.post(f"{self.base}/{method}", json=json_body)
         if response.status_code >= 400:
-            logger.error('"provider=telegram operation=%s status=%s"', method, response.status_code)
+            logger.error(
+                '"provider=telegram operation=%s status=%s"', method, response.status_code
+            )
             raise RuntimeError(f"Telegram API error: {response.status_code}")
         return response.json()
 
-    async def send_message(self, chat_id: int, text: str, reply_markup: dict | None = None) -> dict[str, Any]:
+    async def send_message(
+        self, chat_id: int, text: str, reply_markup: dict | None = None
+    ) -> dict[str, Any]:
         body: dict[str, Any] = {
             "chat_id": chat_id,
             "text": text,
@@ -45,7 +57,9 @@ class TelegramClient:
             body["reply_markup"] = reply_markup
         return await self._post("sendMessage", body)
 
-    async def send_photo(self, chat_id: int, photo: bytes, caption: str | None = None) -> dict[str, Any]:
+    async def send_photo(
+        self, chat_id: int, photo: bytes, caption: str | None = None
+    ) -> dict[str, Any]:
         data = {"chat_id": str(chat_id)}
         if caption:
             data["caption"] = caption[:1024]
@@ -59,8 +73,47 @@ class TelegramClient:
                 [
                     {
                         "text": "✨ Построить мой BodyGraph",
-                        "web_app": {"url": self.settings.mini_app_url},
+                        "web_app": {"url": self.settings.resolved_mini_app_url()},
                     }
                 ]
             ]
         }
+
+    def webhook_url(self) -> str:
+        base = self.settings.public_base_url.rstrip("/")
+        return f"{base}/webhooks/telegram"
+
+    async def set_webhook(self) -> dict[str, Any]:
+        if not self.configured:
+            raise RuntimeError("TELEGRAM_BOT_TOKEN is not configured")
+        if not self.settings.public_base_url:
+            raise RuntimeError("PUBLIC_BASE_URL is not configured")
+        if (
+            "localhost" in self.settings.public_base_url
+            or "127.0.0.1" in self.settings.public_base_url
+        ):
+            raise RuntimeError("PUBLIC_BASE_URL must be a public HTTPS URL in production")
+
+        payload: dict[str, Any] = {
+            "url": self.webhook_url(),
+            "allowed_updates": ["message", "callback_query"],
+            "drop_pending_updates": False,
+        }
+        if self.settings.telegram_webhook_secret:
+            payload["secret_token"] = self.settings.telegram_webhook_secret
+
+        result = await self._post("setWebhook", payload)
+        logger.info(
+            '"provider=telegram operation=setWebhook status=ok url=%s"',
+            self.webhook_url(),
+        )
+        return result
+
+    async def get_webhook_info(self) -> dict[str, Any]:
+        if not self.configured:
+            raise RuntimeError("TELEGRAM_BOT_TOKEN is not configured")
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"{self.base}/getWebhookInfo")
+        if response.status_code >= 400:
+            raise RuntimeError(f"Telegram API error: {response.status_code}")
+        return response.json()

@@ -1,23 +1,42 @@
 services:
+  # Production-like single service (same as Render)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT:-8000}:8000"
+    env_file:
+      - ./human-design-service/.env
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      PORT: "8000"
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8000}
+      MINI_APP_URL: ${MINI_APP_URL:-http://localhost:8000}
+      DEMO_MODE: ${DEMO_MODE:-auto}
+      TELEGRAM_WEBHOOK_AUTO_SETUP: ${TELEGRAM_WEBHOOK_AUTO_SETUP:-false}
+
+  # Optional split stack for local UI hot-reload workflows:
+  # docker compose --profile split up --build backend mini-app
   backend:
+    profiles: ["split"]
     build: ./human-design-service
     ports:
       - "8000:8000"
     env_file:
       - ./human-design-service/.env
     environment:
-      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:8000}
-      - MINI_APP_URL=${MINI_APP_URL:-http://localhost:5173}
-      - DEMO_MODE=${DEMO_MODE:-auto}
-    volumes:
-      - ./human-design-service/knowledge:/app/knowledge:ro
-      - ./human-design-service/fixtures:/app/fixtures:ro
+      APP_ENV: development
+      PUBLIC_BASE_URL: http://localhost:8000
+      MINI_APP_URL: http://localhost:5173
+      DEMO_MODE: ${DEMO_MODE:-auto}
 
   mini-app:
+    profiles: ["split"]
     build:
       context: ./mini-app
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_API_BASE_URL: http://localhost:8000
     ports:
       - "5173:80"
     depends_on:
